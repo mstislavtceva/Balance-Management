@@ -308,13 +308,22 @@ function renderPlacesSummary(places) {
 // Валидация суммы
 function validateAmount(amount, errorElement) {
   if (!amount || isNaN(amount)) {
-    errorElement.textContent = "Enter the amount";
+    errorElement.textContent = "Enter the amount.";
     errorElement.style.display = "block";
     return false;
   }
 
+  // Проверка на целое число
+  if (!Number.isInteger(amount)) {
+    if (errorElement) {
+      errorElement.textContent = "Only integers are allowed.";
+      errorElement.style.display = "block";
+    }
+    return false;
+  }
+
   if (amount <= 0) {
-    errorElement.textContent = "The amount must be positive";
+    errorElement.textContent = "The amount must be positive.";
     errorElement.style.display = "block";
     return false;
   }
