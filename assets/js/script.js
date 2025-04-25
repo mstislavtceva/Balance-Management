@@ -1,6 +1,8 @@
 // DOM элементы
 const devices = document.getElementById("devices");
 const devicesList = document.getElementById("devices-list");
+const notification = document.getElementById("notification");
+const notificationMessage = document.getElementById("notification-message");
 
 // Инициализация приложения
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,6 +29,7 @@ async function loadDevices() {
     renderDevices(devicesData);
   } catch (error) {
     console.error("Ошибка при загрузке девайсов:", error);
+    showError("Couldn't load the device list");
   }
 }
 
@@ -68,4 +71,12 @@ function renderPlacesSummary(places) {
 function formatDate(dateString) {
   const date = new Date(dateString);
   return date.toLocaleString();
+}
+
+// Функция отображения ошибки
+function showError(message) {
+  notification.classList.remove("alert-success", "fade");
+  notification.classList.add("alert-danger", "show");
+  notificationMessage.textContent = message;
+  setTimeout(() => notification.classList.remove("show"), 3000);
 }
