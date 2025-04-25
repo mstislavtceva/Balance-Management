@@ -42,6 +42,55 @@
             <div id="players-list" class="row row-cols-1 g-3"></div>
         </div>
     </div>
+
+    <!-- Модальное окно нумпада -->
+    <div class="modal fade" id="pinpadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Enter the amount</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="pinpad-input" class="form-control mb-3 text-center fs-4" readonly>
+                    <div class="pinpad-container">
+                        <div class="row g-2 mb-2">
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">1</button>
+                            </div>
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">2</button>
+                            </div>
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">3</button>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">4</button>
+                            </div>
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">5</button>
+                            </div>
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">6</button>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">7</button>
+                            </div>
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">8</button>
+                            </div>
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">9</button>
+                            </div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-4"><button class="btn btn-outline-secondary w-100 pinpad-btn">0</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="pinpad-deposit">Deposit</button>
+                    <button type="button" class="btn btn-danger" id="pinpad-withdraw">Withdraw</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -4,6 +4,8 @@ const API_BASE_URL = "https://dev-space.su/api/v1/a";
 // Состояние приложения
 let currentDeviceId = null;
 let currentDeviceName = "";
+let currentPlaceId = null;
+let pinpadModal = null;
 
 // DOM элементы
 const devices = document.getElementById("devices");
@@ -13,11 +15,16 @@ const playersList = document.getElementById("players-list");
 const backButton = document.getElementById("back-button");
 const notification = document.getElementById("notification");
 const notificationMessage = document.getElementById("notification-message");
+const pinpadInput = document.getElementById("pinpad-input");
 
 // Инициализация приложения
 document.addEventListener("DOMContentLoaded", () => {
+  // Инициализация модального окна нумпада
+  pinpadModal = new bootstrap.Modal(document.getElementById("pinpadModal"));
+
   loadDevices();
   setupEventListeners();
+  setupPinpad();
 });
 
 // Настройка обработчиков событий
@@ -29,7 +36,7 @@ function setupEventListeners() {
       const deviceId = parseInt(deviceCard.dataset.deviceId);
       currentDeviceId = deviceId;
       currentDeviceName = deviceCard.dataset.deviceName;
-      loadPlayers(deviceId);
+      loadPlayers(currentDeviceId);
     }
   });
 
@@ -38,17 +45,21 @@ function setupEventListeners() {
     const playerCard = e.target.closest(".player-card");
     if (!playerCard) return;
 
-    const placeId = parseInt(playerCard.dataset.placeId);
+    currentPlaceId = parseInt(playerCard.dataset.placeId);
     const amountInput = playerCard.querySelector(".amount-input");
     const amount = parseFloat(amountInput.value);
     const errorElement = playerCard.querySelector(".error-message");
 
     if (e.target.classList.contains("deposit-btn")) {
-      handleBalanceOperation(amount, "deposit", placeId, errorElement);
+      handleBalanceOperation(amount, "deposit", errorElement);
     }
 
     if (e.target.classList.contains("withdraw-btn")) {
-      handleBalanceOperation(amount, "withdraw", placeId, errorElement);
+      handleBalanceOperation(amount, "withdraw", errorElement);
+    }
+
+    if (e.target.classList.contains("pinpad-btn")) {
+      openPinpad(amountInput);
     }
   });
 
@@ -59,24 +70,62 @@ function setupEventListeners() {
   });
 }
 
+// Настройка нумпада
+function setupPinpad() {
+  // Обработчики для кнопок нумпада
+  document.querySelectorAll(".pinpad-btn").forEach((btn) => {
+    if (btn.id) return; // Пропускаем кнопки с ID
+
+    btn.addEventListener("click", () => {
+      pinpadInput.value += btn.textContent;
+    });
+  });
+
+  // Кнопки операций в нумпаде
+  document.getElementById("pinpad-deposit").addEventListener("click", () => {
+    const amount = parseFloat(pinpadInput.value);
+    const playerCard = document.querySelector(
+      `.player-card[data-place-id="${currentPlaceId}"]`
+    );
+    const errorElement = playerCard.querySelector(".error-message");
+
+    if (validateAmount(amount, errorElement)) {
+      handleBalanceOperation(amount, "deposit", errorElement);
+      pinpadModal.hide();
+    }
+  });
+
+  document.getElementById("pinpad-withdraw").addEventListener("click", () => {
+    const amount = parseFloat(pinpadInput.value);
+    const playerCard = document.querySelector(
+      `.player-card[data-place-id="${currentPlaceId}"]`
+    );
+    const errorElement = playerCard.querySelector(".error-message");
+
+    if (validateAmount(amount, errorElement)) {
+      handleBalanceOperation(amount, "withdraw", errorElement);
+      pinpadModal.hide();
+    }
+  });
+}
+
+// Открытие нумпада
+function openPinpad(amountInput) {
+  pinpadInput.value = amountInput.value;
+  pinpadModal.show();
+}
+
 // Обработка операций с балансом
-async function handleBalanceOperation(
-  amount,
-  operationType,
-  placeId,
-  errorElement
-) {
+async function handleBalanceOperation(amount, operationType, errorElement) {
   try {
     // Валидация
-    if (!amount || isNaN(amount) || amount <= 0) {
-      throw new Error("Enter the correct amount");
-    }
+    if (!validateAmount(amount, errorElement)) return;
 
     errorElement.style.display = "none";
 
     // Отправка запроса
     const response = await fetch(
-      `${API_BASE_URL}/devices/${currentDeviceId}/place/${placeId}/update`,
+      `${API_BASE_URL}/devices/${currentDeviceId}/place/${currentPlaceId}/update`,
       {
         method: "POST",
         headers: {
@@ -153,6 +202,7 @@ function renderPlayers(places, deviceName) {
                      placeholder="Amount" min="1" step="1">
               <button class="btn btn-success deposit-btn mt-4">Deposit</button>
               <button class="btn btn-danger withdraw-btn mt-4">Withdraw</button>
+              <button class="btn btn-outline-primary pinpad-btn mt-4">Numpad</button>
             </div>
             
             <div class="error-message mt-2 text-danger" style="display: none;"></div>
@@ -253,6 +303,23 @@ function renderPlacesSummary(places) {
         <span class="badge bg-info">Total Balance: ${total} KES</span>
       </div>
     `;
+}
+
+// Валидация суммы
+function validateAmount(amount, errorElement) {
+  if (!amount || isNaN(amount)) {
+    errorElement.textContent = "Enter the amount";
+    errorElement.style.display = "block";
+    return false;
+  }
+
+  if (amount <= 0) {
+    errorElement.textContent = "The amount must be positive";
+    errorElement.style.display = "block";
+    return false;
+  }
+
+  return true;
 }
 
 // Вспомогательная функция для форматирования даты
