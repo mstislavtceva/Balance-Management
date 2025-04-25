@@ -1,3 +1,10 @@
+// Конфигурация
+const API_BASE_URL = "https://dev-space.su/api/v1/a";
+
+// Состояние приложения
+let currentDeviceId = null;
+let currentDeviceName = "";
+
 // DOM элементы
 const devices = document.getElementById("devices");
 const devicesList = document.getElementById("devices-list");
@@ -13,15 +20,91 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
 });
 
+// Настройка обработчиков событий
 function setupEventListeners() {
   // Клик по девайсу
-  document.addEventListener("click", (e) => {
+  devicesList.addEventListener("click", (e) => {
     const deviceCard = e.target.closest(".device-card");
     if (deviceCard) {
       const deviceId = parseInt(deviceCard.dataset.deviceId);
+      currentDeviceId = deviceId;
+      currentDeviceName = deviceCard.dataset.deviceName;
       loadPlayers(deviceId);
     }
   });
+
+  // Клик по игроку
+  playersList.addEventListener("click", (e) => {
+    const playerCard = e.target.closest(".player-card");
+    if (!playerCard) return;
+
+    const placeId = parseInt(playerCard.dataset.placeId);
+    const amountInput = playerCard.querySelector(".amount-input");
+    const amount = parseFloat(amountInput.value);
+    const errorElement = playerCard.querySelector(".error-message");
+
+    if (e.target.classList.contains("deposit-btn")) {
+      handleBalanceOperation(amount, "deposit", placeId, errorElement);
+    }
+
+    if (e.target.classList.contains("withdraw-btn")) {
+      handleBalanceOperation(amount, "withdraw", placeId, errorElement);
+    }
+  });
+
+  // Кнопка "Назад"
+  backButton.addEventListener("click", () => {
+    players.style.display = "none";
+    devices.style.display = "block";
+  });
+}
+
+// Обработка операций с балансом
+async function handleBalanceOperation(
+  amount,
+  operationType,
+  placeId,
+  errorElement
+) {
+  try {
+    // Валидация
+    if (!amount || isNaN(amount) || amount <= 0) {
+      throw new Error("Enter the correct amount");
+    }
+
+    errorElement.style.display = "none";
+
+    // Отправка запроса
+    const response = await fetch(
+      `${API_BASE_URL}/devices/${currentDeviceId}/place/${placeId}/update`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          delta: operationType === "deposit" ? amount : -amount,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Server error");
+    }
+
+    // Обновление интерфейса
+    showSuccess(
+      `The balance has been successfully ${
+        operationType === "deposit" ? "replenished" : "changed"
+      }`
+    );
+    await loadPlayers(currentDeviceId);
+  } catch (error) {
+    console.error(`Error ${operationType}:`, error);
+    errorElement.textContent = error.message;
+    errorElement.style.display = "block";
+  }
 }
 
 // Функция загрузки списка игроков для девайса
@@ -67,7 +150,7 @@ function renderPlayers(places, deviceName) {
             
             <div class="balance-controls">
               <input type="number" class="form-control amount-input" 
-                     placeholder="Сумма" min="0.01" step="0.01">
+                     placeholder="Amount" min="1" step="1">
               <button class="btn btn-success deposit-btn mt-4">Deposit</button>
               <button class="btn btn-danger withdraw-btn mt-4">Withdraw</button>
             </div>
@@ -86,10 +169,8 @@ function renderPlayers(places, deviceName) {
 
 // Функция загрузки списка девайсов
 async function loadDevices() {
-  devicesList.innerHTML = "";
-
   try {
-    const response = await fetch("https://dev-space.su/api/v1/a/devices/", {
+    const response = await fetch(`${API_BASE_URL}/devices/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -105,21 +186,19 @@ async function loadDevices() {
   } catch (error) {
     console.error("Error loading devices:", error);
     showError("Couldn't load the device list");
+    devicesList.innerHTML = "";
   }
 }
 
 // Функция загрузки конкретного девайса по ID
 async function loadDeviceById(deviceId) {
   try {
-    const response = await fetch(
-      `https://dev-space.su/api/v1/a/devices/${deviceId}/`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -136,6 +215,14 @@ async function loadDeviceById(deviceId) {
 
 // Функция отображения девайсов
 function renderDevices(devices) {
+  devicesList.innerHTML = "";
+
+  if (!devices || devices.length === 0) {
+    devicesList.innerHTML =
+      '<div class="col-12 text-center text-muted">Нет доступных девайсов</div>';
+    return;
+  }
+
   devices.forEach((device) => {
     const deviceCard = document.createElement("div");
     deviceCard.className = "col";
@@ -162,7 +249,7 @@ function renderPlacesSummary(places) {
 
   return `
       <div class="places-stats">
-        <span class="badge bg-primary">Places: ${places.length}</span>
+        <span class="badge bg-primary">Players: ${places.length}</span>
         <span class="badge bg-info">Total Balance: ${total} KES</span>
       </div>
     `;
@@ -178,6 +265,13 @@ function formatDate(dateString) {
 function showError(message) {
   notification.classList.remove("alert-success", "fade");
   notification.classList.add("alert-danger", "show");
+  notificationMessage.textContent = message;
+  setTimeout(() => notification.classList.remove("show"), 3000);
+}
+
+function showSuccess(message) {
+  notification.classList.remove("alert-danger", "fade");
+  notification.classList.add("alert-success", "show");
   notificationMessage.textContent = message;
   setTimeout(() => notification.classList.remove("show"), 3000);
 }
